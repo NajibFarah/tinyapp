@@ -1,6 +1,23 @@
 const express = require("express");
 const app = express();
 const PORT = 8080;
+const users = { 
+  "userRandomID": {
+    id: "userRandomID", 
+    email: "user@example.com", 
+    password: "purple-monkey-dinosaur"
+  },
+ "user2RandomID": {
+    id: "user2RandomID", 
+    email: "user2@example.com", 
+    password: "dishwasher-funk"
+  },
+  "user2RandomID": {
+    id: "Najib Farah", 
+    email: "muhammed.najib.farah@gmail.com", 
+    password: "najib"
+  }
+}
 
 app.set("view engine", "ejs");
 
@@ -67,6 +84,41 @@ const urlDatabase = {
     res.redirect("/urls");
   }); 
   
+  app.get("/register", (req, res) => {
+
+    const templateVars = { username: req.cookies['user_ID'] };
+    res.render("register", templateVars);
+  }); 
+
+
+  app.post("/register", function(req, res) {
+    let email = req.body.email;
+    let password = req.body.password;
+    if (!email || email === "" && !password || password === ""){
+      res.sendStatus(400)
+    } else {
+      let match = false 
+      for (let i in users){
+        if (users[i].email === email && users[i].password === password){
+          match = true
+        }
+      }
+      if (!match) {
+        res.sendStatus(400)
+      }
+      let id = generateRandomString()
+      console.log(`${email} ${password}`)
+      console.log(match)
+      users[id] = {
+      id: id,
+      email: email,
+      password: password
+    };
+  
+      res.cookie("user_ID", id);
+      res.redirect("/urls");
+  }
+  });
   
   app.post("/urls/:shortURL/delete", (req, res) => {
     let shortURL = req.params.shortURL;
@@ -77,6 +129,12 @@ const urlDatabase = {
   app.post("/urls/:shortURL/edit", ( req, res) => {
       res.send("ok")
   })
+
+  app.get("/login", (req, res) => {
+    const templateVars = { urls: urlDatabase, username: req.cookies['user_ID']};
+    res.render("login", templateVars);
+  });
+
 
   app.post("/login", (req, res) => {
     const username = req.body.username
@@ -91,7 +149,18 @@ const urlDatabase = {
     res.clearCookie("username", username)
     res.redirect("/urls")
   })
+
+  app.get("/urls/login", (req, res) => {
+    res.render("urls_index");
+  });
+  
+  app.post("/urls/login", (req, res) => {
+    const user = req.body.username;
+    res.cookie('user_ID', user);
+    res.redirect('/urls');
+  }) 
+
+  
   app.listen(PORT, () => {
     console.log(`Example app listening on port ${PORT}!`);
   });
-  

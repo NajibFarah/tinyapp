@@ -46,8 +46,14 @@ const getUserById = function (userID) {
 };
 
 const urlDatabase = {
-  b2xVn2: "http://www.lighthouselabs.ca",
-  "9sm5xK": "http://www.google.com",
+  b6UTxQ: {
+    longURL: "https://www.tsn.ca",
+    userID: "aJ48lW",
+  },
+  i3BoGr: {
+    longURL: "https://www.google.ca",
+    userID: "aJ48lW",
+  },
 };
 
 const bodyParser = require("body-parser");
@@ -122,7 +128,11 @@ app.post("/register", function (req, res) {
     const user = getUserByEmail(email);
 
     if (user) {
-      return res.status(400).send("Email already in use.");
+      return res
+        .status(400)
+        .send(
+          "Email already in use. Please <a href= '/register'>try again</a>."
+        );
     }
 
     let id = generateRandomString();
@@ -159,10 +169,18 @@ app.get("/login", (req, res) => {
 app.post("/login", (req, res) => {
   const user = getUserByEmail(req.body.email);
   if (!user) {
-    return res.status(401).send("Issue with email or password.");
+    return res
+      .status(401)
+      .send(
+        "Issue with email or password. Please <a href= '/login'>try again</a>"
+      );
   }
   if (req.body.password !== user.password) {
-    return res.status(401).send("Issue with email or password.");
+    return res
+      .status(401)
+      .send(
+        "Issue with email or password. Please <a href= '/login'>try again</a>"
+      );
   }
 
   res.cookie("user_ID", user.id);

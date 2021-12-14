@@ -1,6 +1,7 @@
 const express = require("express");
 const app = express();
 const PORT = 8080;
+const bcrypt = require("bcryptjs");
 const users = {
   userRandomID: {
     id: "userRandomID",
@@ -15,7 +16,7 @@ const users = {
   NajibFarah: {
     id: "NajibFarah",
     email: "muhammed.najib.farah@gmail.com",
-    password: "najib",
+    password: bcrypt.hashSync("najib", 10),
   },
 };
 
@@ -149,8 +150,9 @@ app.get("/register", (req, res) => {
 });
 
 app.post("/register", function (req, res) {
-  let email = req.body.email;
-  let password = req.body.password;
+  const email = req.body.email;
+  const password = req.body.password;
+  const hashedPassword = bcrypt.hashSync(password, 10);
   if (!email || (email === "" && !password) || password === "") {
     res.sendStatus(400);
   } else {
@@ -165,11 +167,11 @@ app.post("/register", function (req, res) {
     }
 
     let id = generateRandomString();
-    console.log(`${email} ${password}`);
+    console.log(`${email} ${hashedPassword}`);
     users[id] = {
       id: id,
       email: email,
-      password: password,
+      password: hashedPassword,
     };
 
     res.cookie("user_ID", id);
@@ -206,6 +208,8 @@ app.get("/login", (req, res) => {
 });
 
 app.post("/login", (req, res) => {
+  const email = req.body.email;
+  const password = req.body.password;
   const user = getUserByEmail(req.body.email);
   if (!user) {
     return res
@@ -214,13 +218,17 @@ app.post("/login", (req, res) => {
         "Issue with email or password. Please <a href= '/login'>try again</a>"
       );
   }
-  if (req.body.password !== user.password) {
+  // runs when authentication fails
+  if (!bcrypt.compareSync(password, user.password)) {
+    console.log(user[password]);
     return res
       .status(401)
       .send(
         "Issue with email or password. Please <a href= '/login'>try again</a>"
       );
   }
+
+  console.log(user);
 
   res.cookie("user_ID", user.id);
   res.redirect("/urls");

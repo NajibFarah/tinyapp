@@ -2,23 +2,7 @@ const express = require("express");
 const app = express();
 const PORT = 8080;
 const bcrypt = require("bcryptjs");
-const users = {
-  userRandomID: {
-    id: "userRandomID",
-    email: "user@example.com",
-    password: "purple-monkey-dinosaur",
-  },
-  user2RandomID: {
-    id: "user2RandomID",
-    email: "user2@example.com",
-    password: "dishwasher-funk",
-  },
-  NajibFarah: {
-    id: "NajibFarah",
-    email: "muhammed.najib.farah@gmail.com",
-    password: bcrypt.hashSync("najib", 10),
-  },
-};
+const users = {};
 
 app.set("view engine", "ejs");
 
@@ -36,6 +20,16 @@ const getUserByEmail = function (email) {
   return null;
 };
 
+const urlsForUser = (name, database) => {
+  let userUrls = {};
+  for (const shortURL in database) {
+    if (database[shortURL].userID === name) {
+      userUrls[shortURL] = database[shortURL];
+    }
+  }
+  return userUrls;
+};
+
 const getUserById = function (userID) {
   for (const id in users) {
     const user = users[id];
@@ -46,16 +40,7 @@ const getUserById = function (userID) {
   return null;
 };
 
-const urlDatabase = {
-  b6UTxQ: {
-    longURL: "https://www.tsn.ca",
-    userID: "aJ48lW",
-  },
-  i3BoGr: {
-    longURL: "https://www.google.ca",
-    userID: "aJ48lW",
-  },
-};
+const urlDatabase = {};
 
 const bodyParser = require("body-parser");
 app.use(bodyParser.urlencoded({ extended: true }));
@@ -76,7 +61,10 @@ app.get("/hello", (req, res) => {
 });
 
 app.get("/urls", (req, res) => {
-  const { user_ID } = req.cookies;
+  const user_ID = req.cookies.user_ID;
+  const userUrls = urlsForUser(user_ID, urlDatabase); //using the newly created urlsForUser function
+  const templateVars = { urls: userUrls, user: users[user_ID] };
+
   if (!user_ID) {
     return res.redirect("/login");
   }
@@ -86,17 +74,23 @@ app.get("/urls", (req, res) => {
     return res.redirect("/login");
   }
 
-  const templateVars = {
-    user: user,
-    urls: urlDatabase,
-  };
-
   res.render("urls_index", templateVars);
 });
 
 app.get("/u/:shortURL", (req, res) => {
-  const longURL = urlDatabase[req.params.shortURL].longURL;
-  res.redirect(longURL);
+  const shortURL = req.params.shortURL;
+  let user_ID = req.cookies.user_ID;
+  if (!urlDatabase[shortURL] || !user_ID) {
+    res.send("Please try again! You don't have permission to view");
+  }
+  if (urlDatabase[shortURL].userID != user_ID) {
+    res.send("Please try again! You don't have permission to view");
+  }
+  const longURL = urlDatabase[shortURL].longURL;
+  const id = req.cookies["user_ID"];
+  const user = users[id];
+  const templateVars = { shortURL, longURL, user };
+  res.render("urls_show", templateVars);
 });
 
 app.post("/urls", (req, res) => {
@@ -127,7 +121,7 @@ app.get("/urls/:shortURL", (req, res) => {
   const long = urlDatabase[req.params.shortURL];
   const templateVars = {
     shortURL: req.params.shortURL,
-    longURL: long,
+    longURL: long.longURL,
     user: req.cookies["user_ID"],
   };
   res.render("urls_show", templateVars);
